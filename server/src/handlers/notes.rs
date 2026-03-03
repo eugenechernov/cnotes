@@ -35,6 +35,20 @@ fn error_response(status: StatusCode, code: &str, message: &str) -> ApiResponse 
     ))
 }
 
+fn error_tuple(status: StatusCode, code: &str, message: &str) -> (StatusCode, Json<Value>) {
+    (
+        status,
+        Json(json!({
+            "success": false,
+            "data": null,
+            "error": {
+                "code": code,
+                "message": message
+            }
+        })),
+    )
+}
+
 pub async fn get_all_notes(State(pool): State<Pool>) -> ApiResponse {
     // TODO: Add pagination support
     
@@ -47,7 +61,7 @@ pub async fn get_all_notes(State(pool): State<Pool>) -> ApiResponse {
     .await
     .map_err(|e| {
         tracing::error!("Failed to fetch notes: {:?}", e);
-        error_response(
+        error_tuple(
             StatusCode::INTERNAL_SERVER_ERROR,
             "DATABASE_ERROR",
             "Failed to fetch notes",
@@ -71,7 +85,7 @@ pub async fn get_note_by_id(
     .await
     .map_err(|e| {
         tracing::error!("Failed to fetch note {}: {:?}", id, e);
-        error_response(
+        error_tuple(
             StatusCode::INTERNAL_SERVER_ERROR,
             "DATABASE_ERROR",
             "Failed to fetch note",
@@ -111,7 +125,7 @@ pub async fn create_note(
     .await
     .map_err(|e| {
         tracing::error!("Failed to create note: {:?}", e);
-        error_response(
+        error_tuple(
             StatusCode::INTERNAL_SERVER_ERROR,
             "DATABASE_ERROR",
             "Failed to create note",
@@ -150,7 +164,7 @@ pub async fn update_note(
     .await
     .map_err(|e| {
         tracing::error!("Failed to check note existence {}: {:?}", id, e);
-        error_response(
+        error_tuple(
             StatusCode::INTERNAL_SERVER_ERROR,
             "DATABASE_ERROR",
             "Failed to update note",
@@ -187,7 +201,7 @@ pub async fn update_note(
     .await
     .map_err(|e| {
         tracing::error!("Failed to update note {}: {:?}", id, e);
-        error_response(
+        error_tuple(
             StatusCode::INTERNAL_SERVER_ERROR,
             "DATABASE_ERROR",
             "Failed to update note",
@@ -204,7 +218,7 @@ pub async fn delete_note(State(pool): State<Pool>, Path(id): Path<i32>) -> ApiRe
         .await
         .map_err(|e| {
             tracing::error!("Failed to delete note {}: {:?}", id, e);
-            error_response(
+            error_tuple(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "DATABASE_ERROR",
                 "Failed to delete note",

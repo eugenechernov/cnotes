@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health_check))
         .route("/api/notes", get(get_all_notes).post(create_note))
         .route(
-            "/api/notes/:id",
+            "/api/notes/{:id}",
             get(get_note_by_id)
                 .put(update_note)
                 .delete(delete_note),
