@@ -11,9 +11,9 @@ use crate::database::Pool;
 use crate::models::{CreateNote, Note, UpdateNote};
 
 // Response types
-type ApiResponse = Result<Json<Value>, (StatusCode, Json<Value>)>;
+pub type ApiResponse = Result<Json<Value>, (StatusCode, Json<Value>)>;
 
-fn success_response(data: Value) -> ApiResponse {
+pub fn success_response(data: Value) -> ApiResponse {
     Ok(Json(json!({
         "success": true,
         "data": data,
@@ -21,7 +21,7 @@ fn success_response(data: Value) -> ApiResponse {
     })))
 }
 
-fn error_response(status: StatusCode, code: &str, message: &str) -> ApiResponse {
+pub fn error_response(status: StatusCode, code: &str, message: &str) -> ApiResponse {
     Err((
         status,
         Json(json!({
@@ -35,7 +35,7 @@ fn error_response(status: StatusCode, code: &str, message: &str) -> ApiResponse 
     ))
 }
 
-fn error_tuple(status: StatusCode, code: &str, message: &str) -> (StatusCode, Json<Value>) {
+pub fn error_tuple(status: StatusCode, code: &str, message: &str) -> (StatusCode, Json<Value>) {
     (
         status,
         Json(json!({
@@ -234,4 +234,51 @@ pub async fn delete_note(State(pool): State<Pool>, Path(id): Path<i32>) -> ApiRe
     }
 
     success_response(json!({ "message": "Note deleted successfully" }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_success_response() {
+        let data = json!({"test": "data"});
+        let response = success_response(data.clone());
+        
+        assert!(response.is_ok());
+        let json_response = response.unwrap();
+        let value = json_response.0;
+        
+        assert_eq!(value["success"], true);
+        assert_eq!(value["data"], data);
+        assert_eq!(value["error"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn test_error_response() {
+        let response = error_response(StatusCode::BAD_REQUEST, "TEST_ERROR", "Test message");
+        
+        assert!(response.is_err());
+        let (status, json_response) = response.unwrap_err();
+        let value = json_response.0;
+        
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(value["success"], false);
+        assert_eq!(value["data"], serde_json::Value::Null);
+        assert_eq!(value["error"]["code"], "TEST_ERROR");
+        assert_eq!(value["error"]["message"], "Test message");
+    }
+
+    #[test]
+    fn test_error_tuple() {
+        let (status, json_response) = error_tuple(StatusCode::NOT_FOUND, "NOT_FOUND", "Item not found");
+        let value = json_response.0;
+        
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        assert_eq!(value["success"], false);
+        assert_eq!(value["data"], serde_json::Value::Null);
+        assert_eq!(value["error"]["code"], "NOT_FOUND");
+        assert_eq!(value["error"]["message"], "Item not found");
+    }
 }
